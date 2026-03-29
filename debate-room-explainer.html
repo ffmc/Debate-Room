@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Debate Room — Business Intelligence, Evolved</title>
+<style>
+/* System fonts — no external dependency */
+
+:root {
+  --bg:           #0a0a0f;
+  --surface:      #111118;
+  --surface2:     #16161f;
+  --text-primary: #f0f0f0;
+  --text-secondary: #a0a0be;       /* was #7a7a8c — boosted */
+  --text-muted:   #606080;
+  --accent:       #311DC4;         /* indigo — replaces yellow */
+  --accent-light: #5a48e8;         /* lighter tint for glows */
+  --accent-red:   #AB1DC4;
+  --border:       #2c2c44;         /* was #1e1e2e — more visible */
+  --border-dim:   #1e1e2e;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text-primary);
+}
+
+/* Noise overlay */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 128px 128px;
+}
+
+/* Progress bar */
+#progress-bar {
+  position: fixed; bottom: 0; left: 0; height: 2px; width: 0%;
+  background: var(--accent);
+  z-index: 10000; transition: width 0.1s linear;
+  box-shadow: 0 0 10px var(--accent-light);
+}
+
+/* Scene wrapper */
+.scene {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+}
+.scene.active  { opacity: 1; pointer-events: auto; }
+
+/* Transition overlay */
+#transition-overlay {
+  position: fixed; inset: 0; background: #000;
+  z-index: 5000; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+#transition-overlay.visible { opacity: 1; }
+
+/* ========================
+   ANIMATION KEYFRAMES
+   ======================== */
+@keyframes fadeUp  { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
+@keyframes drawRight { from { width:0; } to { width:100%; } }
+@keyframes drawDownLine { from { height:0; } to { height:100%; } }
+@keyframes cascadeDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes cardReveal  { from { opacity:0; transform:scale(0.92); } to { opacity:1; transform:scale(1); } }
+@keyframes slideFromLeft  { from { opacity:0; transform:translateX(-50px); } to { opacity:1; transform:translateX(0); } }
+@keyframes slideFromRight { from { opacity:0; transform:translateX(50px); }  to { opacity:1; transform:translateX(0); } }
+@keyframes barReveal      { from { opacity:0; transform:translateY(8px); }   to { opacity:1; transform:translateY(0); } }
+@keyframes pulse-glow {
+  0%,100% { box-shadow: 0 0 0 1px var(--accent), 0 0 8px 0 var(--accent-light); }
+  50%     { box-shadow: 0 0 0 1px var(--accent), 0 0 22px 4px var(--accent-light); }
+}
+@keyframes cursorMove {
+  0%   { transform: translate(0,0); }
+  20%  { transform: translate(-60px,-40px); }
+  40%  { transform: translate(-80px,20px); }
+  60%  { transform: translate(-20px,60px); }
+  80%  { transform: translate(-100px,-10px); }
+  100% { transform: translate(-60px,30px); }
+}
+
+/* ========================
+   SCENE 0 — Category anchor
+   ======================== */
+#scene0 { background: #000; }
+#scene0 .headline {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 32px; font-weight: 300; color: var(--text-primary); text-align: center; letter-spacing: -0.01em;
+  opacity: 0; animation: fadeUp 1s cubic-bezier(0.16,1,0.3,1) 0.4s forwards;
+}
+
+/* ========================
+   SCENE 1 — Acknowledge present
+   ======================== */
+#scene1 { background: var(--bg); align-items: center; justify-content: flex-start; padding: 0 160px; }
+#scene1 .text-col { flex: 0 0 620px; display: flex; flex-direction: column; gap: 28px; }
+#scene1 .s1-line  { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: var(--text-primary); opacity: 0; }
+#scene1 .s1-line.l1 { font-size: 52px; font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.3s forwards; }
+#scene1 .s1-line.l2 { font-size: 24px; font-weight: 300; line-height: 1.5; letter-spacing: -0.01em; color: var(--text-secondary); animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.9s forwards; }
+#scene1 .s1-line.l3 { font-size: 24px; font-weight: 300; line-height: 1.5; letter-spacing: -0.01em; color: var(--text-secondary); animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 1.5s forwards; }
+
+#scene1 .dashboard-mock {
+  flex: 1; display: flex; flex-direction: column; gap: 24px;
+  align-items: flex-end; padding-right: 40px;
+  opacity: 0; animation: fadeIn 0.8s ease 2.2s forwards;
+}
+.kpi-row { display: flex; gap: 20px; }
+.kpi-tile {
+  width: 210px; height: 90px;
+  border: 1px solid var(--border); border-radius: 4px; padding: 14px 18px;
+  position: relative; overflow: hidden; background: var(--surface);
+}
+.kpi-tile::after {
+  content:''; position:absolute; bottom:0; left:0; height:1px;
+  background: var(--border); animation: drawRight 1s ease 2.5s forwards; width:0;
+}
+.kpi-label {
+  font-family: ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size: 10px;
+  color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.12em;
+  opacity: 0; animation: fadeIn 0.5s ease 2.8s forwards;
+}
+.kpi-value {
+  font-family: ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size: 28px;
+  color: var(--text-secondary); margin-top: 8px;
+  opacity: 0; animation: fadeIn 0.5s ease 3.1s forwards;
+}
+.chart-outline {
+  width: 460px; height: 130px;
+  border: 1px solid var(--border); border-radius: 4px;
+  position: relative; overflow: hidden; background: var(--surface);
+}
+.chart-outline.bar-chart::before {
+  content:''; position:absolute; bottom:0; left:0; right:0; height:100%;
+  background:
+    linear-gradient(to top,var(--border) 40%,transparent 40%) 20px bottom/32px 100% no-repeat,
+    linear-gradient(to top,var(--border) 65%,transparent 65%) 62px bottom/32px 100% no-repeat,
+    linear-gradient(to top,var(--border) 50%,transparent 50%) 104px bottom/32px 100% no-repeat,
+    linear-gradient(to top,var(--border) 75%,transparent 75%) 146px bottom/32px 100% no-repeat,
+    linear-gradient(to top,var(--border) 35%,transparent 35%) 188px bottom/32px 100% no-repeat,
+    linear-gradient(to top,var(--border) 55%,transparent 55%) 230px bottom/32px 100% no-repeat,
+    linear-gradient(to top,var(--border) 80%,transparent 80%) 272px bottom/32px 100% no-repeat,
+    linear-gradient(to top,var(--border) 45%,transparent 45%) 314px bottom/32px 100% no-repeat,
+    linear-gradient(to top,var(--border) 60%,transparent 60%) 356px bottom/32px 100% no-repeat,
+    linear-gradient(to top,var(--border) 70%,transparent 70%) 398px bottom/32px 100% no-repeat;
+  opacity: 0; animation: fadeIn 0.8s ease 3.4s forwards;
+}
+.chart-outline.line-chart svg {
+  position:absolute; inset:0; width:100%; height:100%;
+  opacity: 0; animation: fadeIn 0.8s ease 3.8s forwards;
+}
+
+/* ========================
+   SCENE 2 — The real problem
+   ======================== */
+#scene2 { background: var(--bg); padding: 0 160px; align-items: center; justify-content: flex-start; }
+#scene2 .text-col { flex: 0 0 640px; display: flex; flex-direction: column; gap: 28px; }
+#scene2 .s2-line  { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: var(--text-primary); opacity: 0; }
+#scene2 .s2-line.l1 { font-size: 52px; font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.3s forwards; }
+#scene2 .s2-line.l2 { font-size: 24px; font-weight: 300; line-height: 1.55; letter-spacing: -0.01em; color: var(--text-secondary); animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 1.0s forwards; }
+#scene2 .s2-line.l3 { font-size: 24px; font-weight: 300; line-height: 1.55; letter-spacing: -0.01em; color: var(--text-secondary); animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 1.7s forwards; }
+
+#scene2 .dashboard-dim {
+  flex:1; display:flex; flex-direction:column; gap:24px;
+  align-items:flex-end; padding-right:40px; opacity: 0.55;
+}
+/* Brighter chart elements inside the dimmed dashboard */
+#scene2 .dashboard-dim .chart-outline.bar-chart::before {
+  background:
+    linear-gradient(to top,#4a4a78 40%,transparent 40%) 20px bottom/32px 100% no-repeat,
+    linear-gradient(to top,#4a4a78 65%,transparent 65%) 62px bottom/32px 100% no-repeat,
+    linear-gradient(to top,#4a4a78 50%,transparent 50%) 104px bottom/32px 100% no-repeat,
+    linear-gradient(to top,#4a4a78 75%,transparent 75%) 146px bottom/32px 100% no-repeat,
+    linear-gradient(to top,#4a4a78 35%,transparent 35%) 188px bottom/32px 100% no-repeat,
+    linear-gradient(to top,#4a4a78 55%,transparent 55%) 230px bottom/32px 100% no-repeat,
+    linear-gradient(to top,#4a4a78 80%,transparent 80%) 272px bottom/32px 100% no-repeat,
+    linear-gradient(to top,#4a4a78 45%,transparent 45%) 314px bottom/32px 100% no-repeat,
+    linear-gradient(to top,#4a4a78 60%,transparent 60%) 356px bottom/32px 100% no-repeat,
+    linear-gradient(to top,#4a4a78 70%,transparent 70%) 398px bottom/32px 100% no-repeat;
+  opacity: 1;
+  animation: none;
+}
+#scene2 .cursor {
+  position:absolute; right:370px; top:50%;
+  width:14px; height:20px;
+  border-left:2px solid var(--text-secondary); border-bottom:2px solid var(--text-secondary);
+  opacity:0; animation: fadeIn 0.5s ease 2.5s forwards, cursorMove 5s ease 3s infinite;
+}
+
+/* ========================
+   SCENE 3 — The real bottleneck
+   ======================== */
+#scene3 { background: var(--bg); padding: 0 160px; align-items: center; justify-content: flex-start; }
+#scene3 .text-col { flex: 0 0 700px; display: flex; flex-direction: column; gap: 28px; }
+#scene3 .s3-line  { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: var(--text-primary); opacity: 0; }
+#scene3 .s3-line.l1 { font-size: 52px; font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.3s forwards; }
+#scene3 .s3-line.l2 { font-size: 26px; font-weight: 300; line-height: 1.5; letter-spacing: -0.01em; color: var(--text-secondary); animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 1.0s forwards; }
+#scene3 .s3-line.l3 { font-size: 26px; font-weight: 300; line-height: 1.5; letter-spacing: -0.01em; color: var(--text-secondary); animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 1.6s forwards; }
+#scene3 .cascade-col {
+  flex:1; position:relative; height:700px; overflow:hidden;
+  display:flex; flex-direction:column; justify-content:center; gap:10px; padding:0 60px;
+}
+.cascade-item {
+  font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:12px;
+  color:var(--text-secondary); opacity:0; white-space:nowrap;
+}
+
+/* ========================
+   SCENE 4 — What if
+   ======================== */
+#scene4 { background:var(--bg); padding:0 200px; align-items:center; justify-content:center; }
+#scene4 .text-col { flex:0 0 780px; display:flex; flex-direction:column; gap:28px; }
+#scene4 .s4-line  { font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; color:var(--text-primary); opacity:0; }
+#scene4 .s4-line.l1 { font-size: 52px; font-weight:600; line-height:1.05; letter-spacing:-0.02em; animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.3s forwards; }
+#scene4 .s4-line.l2 { font-size: 24px; font-weight:300; line-height:1.6; letter-spacing:-0.01em; color:var(--text-secondary); animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 1.0s forwards; }
+#scene4 .s4-line.l3 { font-size: 24px; font-weight:300; line-height:1.6; letter-spacing:-0.01em; color:var(--text-secondary); animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 1.8s forwards; }
+
+#scene4 .signal-area {
+  position:absolute; right:160px; top:50%; transform:translateY(-50%);
+  width:400px; height:480px; display:flex; align-items:center; justify-content:center;
+}
+.noise-numbers { position:absolute; inset:0; overflow:hidden; }
+.noise-num {
+  position:absolute; font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:11px;
+  color:var(--text-secondary); opacity:0;
+}
+.signal-card {
+  position:relative; z-index:10; background:var(--surface);
+  border:1px solid var(--border); border-radius:6px;
+  padding:28px 32px; width:340px; opacity:0;
+  animation: cardReveal 0.8s cubic-bezier(0.16,1,0.3,1) 5.5s forwards;
+  box-shadow: 0 0 40px rgba(49,29,196,0.12), 0 20px 60px rgba(0,0,0,0.7);
+}
+.signal-card-label { font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.12em; margin-bottom:10px; }
+.signal-card-title { font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; font-size:19px; color:var(--text-primary); line-height:1.3; margin-bottom:12px; }
+.signal-card-body  { font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:11px; color:var(--text-secondary); line-height:1.65; }
+.signal-card-accent { display:inline-block; margin-top:14px; font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:11px; color:var(--accent-light); letter-spacing:0.06em; }
+
+/* ========================
+   SCENE 5 — Debate Room (screen frame)
+   ======================== */
+#scene5 { background:var(--bg); flex-direction:column; align-items:center; justify-content:center; gap:0; padding:40px 0 20px; }
+
+#scene5 .product-header { text-align:center; margin-bottom:28px; flex-shrink:0; }
+.product-name    { font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; font-size:54px; font-weight:700; color:var(--accent-light); letter-spacing:-0.03em; opacity:0; animation:fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.2s forwards; }
+.product-tagline { font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; font-size:20px; font-weight:300; letter-spacing:-0.01em; color:var(--text-secondary); margin-top:8px; opacity:0; animation:fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.8s forwards; }
+
+/* Monitor / screen frame */
+.monitor-frame {
+  width: 1480px;
+  background: #1c1c2e;
+  border-radius: 10px 10px 6px 6px;
+  box-shadow:
+    0 0 0 1px #2a2a46,
+    0 0 0 3px #14141e,
+    0 0 60px rgba(49,29,196,0.18),
+    0 40px 100px rgba(0,0,0,0.9);
+  opacity: 0;
+  animation: fadeIn 0.7s ease 1.3s forwards;
+  flex-shrink: 0;
+}
+
+/* Browser chrome bar */
+.screen-chrome {
+  background: #13131e;
+  border-radius: 10px 10px 0 0;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid #252540;
+}
+.chrome-dots { display:flex; gap:7px; align-items:center; flex-shrink:0; }
+.chrome-dot  { width:11px; height:11px; border-radius:50%; }
+.chrome-dot.cr { background:#ff5f57; }
+.chrome-dot.cy { background:#febc2e; }
+.chrome-dot.cg { background:#28c840; }
+.chrome-tab {
+  font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:12px;
+  color:var(--text-secondary); background:#1c1c2e; border-radius:4px 4px 0 0;
+  padding:5px 16px; border:1px solid #252540; border-bottom:none; flex-shrink:0;
+}
+.chrome-tab.active-tab { color:var(--text-primary); background:#0d0d18; }
+.chrome-address {
+  flex:1; max-width:520px; margin:0 auto;
+  background:#0d0d18; border:1px solid #252540; border-radius:5px;
+  height:26px; display:flex; align-items:center; gap:6px; padding:0 10px;
+}
+.chrome-address .lock { font-size:11px; color:var(--text-muted); }
+.chrome-address .url  { font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:12px; color:var(--text-muted); }
+.chrome-addr-spacer   { flex:1; }
+
+/* Screen content area */
+.screen-content {
+  background: var(--bg);
+  border-radius: 0 0 6px 6px;
+  padding: 20px 20px 16px;
+}
+
+/* Debate panel layout */
+.debate-container {
+  display:flex; width:100%; height:420px; gap:0;
+}
+.debate-panel {
+  flex:1; background:var(--surface); border:1px solid var(--border);
+  padding:22px 28px 18px; overflow:hidden; position:relative; opacity:0;
+  display:flex; flex-direction:column;
+}
+.debate-panel.apollo { border-radius:4px 0 0 4px; border-right:none; animation:slideFromLeft 0.7s cubic-bezier(0.16,1,0.3,1) 2.0s forwards; }
+.debate-panel.cass   { border-radius:0 4px 4px 0; border-left:none;  animation:slideFromRight 0.7s cubic-bezier(0.16,1,0.3,1) 2.0s forwards; }
+
+.debate-divider {
+  width:2px; background:var(--border); align-self:stretch;
+  position:relative; z-index:5; flex-shrink:0; overflow:hidden;
+}
+.debate-divider::after {
+  content:''; position:absolute; top:0; left:0; right:0; height:0;
+  background:linear-gradient(to bottom,var(--accent-light),var(--accent-red));
+  animation: drawDownLine 0.8s ease 2.8s forwards;
+}
+
+.agent-label { font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:13px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; margin-bottom:14px; }
+.agent-label.apollo-label { color:var(--accent-light); }
+.agent-label.cass-label   { color:var(--accent-red); }
+
+.debate-metric { font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:12px; color:var(--text-muted); margin-bottom:12px; letter-spacing:0.08em; text-transform:uppercase; opacity:0; animation:fadeIn 0.5s ease 2.6s forwards; }
+
+.debate-text-block { font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:14px; line-height:1.75; color:rgba(200,200,220,0.88); opacity:0; flex-shrink:0; }
+.debate-text-block.apollo-text { animation: fadeIn 0.6s ease 3.2s forwards; }
+.debate-text-block.cass-text   { animation: fadeIn 0.6s ease 3.2s forwards; }
+
+.debate-supporting { margin-top:14px; padding-top:12px; border-top:1px solid var(--border-dim); display:flex; flex-direction:column; gap:6px; opacity:0; flex-shrink:0; }
+.debate-supporting.apollo-s { animation:fadeIn 0.6s ease 3.9s forwards; }
+.debate-supporting.cass-s   { animation:fadeIn 0.6s ease 3.9s forwards; }
+.support-item { font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:13px; color:var(--text-secondary); display:flex; align-items:baseline; gap:8px; }
+.support-item .dot { width:4px; height:4px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+.dot.blue { background:var(--accent-light); }
+.dot.red  { background:var(--accent-red); }
+
+.debate-confidence {
+  margin-top:12px; font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:11px;
+  color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em;
+  opacity:0; animation:fadeIn 0.5s ease 4.4s forwards; flex-shrink:0;
+}
+.confidence-bar  { height:2px; background:var(--border-dim); border-radius:2px; margin-top:5px; overflow:hidden; }
+.confidence-fill { height:100%; border-radius:2px; }
+.confidence-fill.blue { background:var(--accent-light); }
+.confidence-fill.red  { background:var(--accent-red); }
+
+/* Mini sparkline charts in panels */
+.debate-chart {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-dim);
+  opacity: 0;
+  animation: fadeIn 0.6s ease 5.0s forwards;
+}
+.debate-chart-label {
+  font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:11px;
+  color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em;
+  margin-bottom:6px;
+}
+.debate-chart svg { display:block; width:100%; height:70px; overflow:visible; }
+
+.s5-caption { font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; font-size:19px; font-weight:300; letter-spacing:-0.01em; color:var(--text-secondary); margin-top:16px; text-align:center; opacity:0; animation:fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 4.6s forwards; max-width:800px; }
+
+/* ========================
+   SCENE 6 — The verdict
+   ======================== */
+#scene6 { background:var(--bg); flex-direction:column; align-items:center; justify-content:center; gap:32px; }
+#scene6 .s6-header { text-align:center; }
+#scene6 .s6-line { font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; color:var(--text-primary); opacity:0; }
+#scene6 .s6-line.l1 { font-size:40px; font-weight:600; line-height:1.1; letter-spacing:-0.02em; animation:fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.3s forwards; }
+#scene6 .s6-line.l2 { font-size:22px; font-weight:300; letter-spacing:-0.01em; color:var(--text-secondary); animation:fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.9s forwards; margin-top:8px; }
+
+#scene6 .verdict-screen {
+  width:1060px; flex-shrink:0; background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; overflow:hidden; opacity:0; animation:fadeIn 0.6s ease 1.4s forwards;
+}
+.verdict-top { display:flex; height:240px; }
+.verdict-panel { flex:1; padding:26px 34px; display:flex; flex-direction:column; }
+.verdict-panel.apollo-v { border-right:1px solid var(--border); }
+.verdict-panel-label { font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:12px; }
+.verdict-panel-label.gn { color:var(--accent-light); }
+.verdict-panel-label.rd { color:var(--accent-red); }
+.verdict-summary { font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:14px; color:var(--text-secondary); line-height:1.75; flex:1; }
+
+.verdict-bar {
+  display:flex; align-items:center; justify-content:center; gap:20px;
+  padding:22px 36px; border-top:1px solid var(--border); background:rgba(0,0,0,0.25);
+  opacity:0; animation:barReveal 0.6s ease 2.2s forwards;
+}
+.verdict-btn {
+  font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:15px; font-weight:400;
+  padding:12px 32px; border-radius:4px; letter-spacing:0.06em; cursor:pointer;
+  background:transparent;
+}
+.verdict-btn.apollo-btn { border:1px solid var(--accent); color:var(--accent-light); animation:pulse-glow 2s ease 2.8s infinite; }
+.verdict-btn.cass-btn   { border:1px solid var(--accent-red); color:var(--accent-red); }
+.verdict-or { font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:13px; color:var(--text-muted); letter-spacing:0.1em; }
+
+#scene6 .s6-body {
+  display: flex; align-items: flex-start; gap: 40px;
+}
+#scene6 .decision-trail {
+  flex-shrink: 0; padding-top: 4px;
+  opacity:0; animation:fadeIn 0.6s ease 3.0s forwards;
+}
+.trail-label { font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.12em; margin-bottom:10px; opacity:0.7; }
+.trail-entry { font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:13px; color:var(--text-secondary); display:flex; gap:10px; align-items:center; line-height:1.8; }
+.trail-time  { color:var(--accent-light); font-size:12px; }
+.trail-dot-line { width:1px; height:16px; background:var(--border); margin:2px 0 2px 3px; }
+
+/* ========================
+   SCENE 7 — Closing
+   ======================== */
+#scene7 { background:#000; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:32px; padding:0 280px; }
+#scene7 .s7-line { font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; color:var(--text-primary); line-height:1.2; opacity:0; }
+#scene7 .s7-line.l1 { font-size:40px; font-weight:600; letter-spacing:-0.02em; animation:fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.5s forwards; }
+#scene7 .s7-line.l2 { font-size:28px; font-weight:300; letter-spacing:-0.01em; color:var(--text-secondary); animation:fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 1.3s forwards; }
+#scene7 .s7-final   { font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; font-size:21px; font-weight:500; letter-spacing:-0.01em; color:var(--accent-light); opacity:0; animation:fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 2.4s forwards; }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+<div id="transition-overlay"></div>
+
+<!-- SCENE 0 ─ Category anchor -->
+<div class="scene active" id="scene0">
+  <p class="headline">Business Intelligence has a new chapter.</p>
+</div>
+
+<!-- SCENE 1 ─ Dashboards changed everything -->
+<div class="scene" id="scene1">
+  <div class="text-col">
+    <div class="s1-line l1">Dashboards changed<br>everything.</div>
+    <div class="s1-line l2">Suddenly, you could see your business.<br>Revenue by region. Churn by segment.<br>Growth, week by week.</div>
+    <div class="s1-line l3">For the first time, the numbers didn't<br>live in spreadsheets. They lived on screen,<br>always on. Decisions got better.</div>
+  </div>
+  <div class="dashboard-mock">
+    <div class="kpi-row">
+      <div class="kpi-tile"><div class="kpi-label">Revenue MTD</div><div class="kpi-value">$4.2M</div></div>
+      <div class="kpi-tile"><div class="kpi-label">Churn Rate</div><div class="kpi-value">2.4%</div></div>
+    </div>
+    <div class="chart-outline bar-chart"></div>
+    <div class="chart-outline line-chart">
+      <svg viewBox="0 0 460 130" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#2c2c44" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="#2c2c44" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <polygon points="0,100 57,75 115,83 172,50 230,58 287,28 345,42 402,18 460,32 460,130 0,130" fill="url(#lg1)"/>
+        <polyline points="0,100 57,75 115,83 172,50 230,58 287,28 345,42 402,18 460,32" fill="none" stroke="#3c3c60" stroke-width="1.5"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- SCENE 2 ─ But a dashboard can't tell you what to do -->
+<div class="scene" id="scene2">
+  <div class="text-col">
+    <div class="s2-line l1">But a dashboard<br>can't tell you<br>what to do.</div>
+    <div class="s2-line l2">You can see that churn is up. You can see<br>margins compressing. You can see the trend.</div>
+    <div class="s2-line l3">What you can't see is:<br><em>should you act on it. Or wait?</em></div>
+  </div>
+  <div class="dashboard-dim">
+    <div class="kpi-row">
+      <div class="kpi-tile"><div class="kpi-label">Revenue MTD</div><div class="kpi-value">$4.2M</div></div>
+      <div class="kpi-tile"><div class="kpi-label">Churn Rate</div><div class="kpi-value">2.4%</div></div>
+    </div>
+    <div class="chart-outline bar-chart"></div>
+    <div class="chart-outline line-chart">
+      <svg viewBox="0 0 460 130" preserveAspectRatio="none">
+        <polyline points="0,100 57,75 115,83 172,50 230,58 287,28 345,42 402,18 460,32" fill="none" stroke="#5a5a90" stroke-width="2"/>
+      </svg>
+    </div>
+  </div>
+  <div class="cursor" id="s2-cursor"></div>
+</div>
+
+<!-- SCENE 3 ─ The real bottleneck -->
+<div class="scene" id="scene3">
+  <div class="text-col">
+    <div class="s3-line l1">That's the question<br>no chart answers.</div>
+    <div class="s3-line l2">Not finding the data.<br>Not visualising it.</div>
+    <div class="s3-line l3">Knowing what it means<br>and what decision to make<br>because of it.</div>
+  </div>
+  <div class="cascade-col" id="cascade-col"></div>
+</div>
+
+<!-- SCENE 4 ─ What if -->
+<div class="scene" id="scene4">
+  <div class="text-col">
+    <div class="s4-line l1">What if before you decided,<br>your data argued<br>both sides?</div>
+    <div class="s4-line l2">The optimistic case and the cautious case,<br>both made rigorously from your own numbers.</div>
+    <div class="s4-line l3">So you could walk into every decision<br>having already heard the debate,<br>and make the call with confidence.</div>
+  </div>
+  <div class="signal-area">
+    <div class="noise-numbers" id="noise-numbers"></div>
+    <div class="signal-card">
+      <div class="signal-card-label">Key Insight · Tables</div>
+      <div class="signal-card-title">Profitability gap widening<br>in Southeast region</div>
+      <div class="signal-card-body">Margin compression of 3.2pp over 90d. Two conflicting reads on trajectory. One optimistic, one cautious. Both rigorous.</div>
+      <div class="signal-card-accent">→ Open in Debate Room</div>
+    </div>
+  </div>
+</div>
+
+<!-- SCENE 5 ─ Debate Room reveal (inside screen frame) -->
+<div class="scene" id="scene5">
+  <div class="product-header">
+    <div class="product-name">Debate Room.</div>
+    <div class="product-tagline">Two perspectives on every metric. One decision, fully informed.</div>
+  </div>
+
+  <div class="monitor-frame">
+    <!-- Browser chrome -->
+    <div class="screen-chrome">
+      <div class="chrome-dots">
+        <div class="chrome-dot cr"></div>
+        <div class="chrome-dot cy"></div>
+        <div class="chrome-dot cg"></div>
+      </div>
+      <div class="chrome-tab">Overview</div>
+      <div class="chrome-tab active-tab">⚑ Tables — SE Profitability</div>
+      <div class="chrome-tab">Churn Analysis</div>
+      <div class="chrome-address">
+        <span class="lock">🔒</span>
+        <span class="url">app.debateroom.io / insights / tables-se-q1</span>
+      </div>
+      <div class="chrome-addr-spacer"></div>
+    </div>
+
+    <!-- Screen content: debate panels -->
+    <div class="screen-content">
+      <div class="debate-container">
+        <!-- Apollo -->
+        <div class="debate-panel apollo">
+          <div class="agent-label apollo-label">Apollo — Bullish</div>
+          <div class="debate-metric">Tables Profitability · Southeast · Q1</div>
+          <div class="debate-text-block apollo-text">The margin compression is temporary. Volume growth of +18% QoQ is absorbing fixed costs at an accelerating rate. By Q2, logistics-to-revenue normalises below baseline. Historical precedent from 2022 supports recovery within 2 quarters at this volume threshold. <strong style="color:#c0c0e0">Hold strategy and monitor May renewal.</strong></div>
+          <div class="debate-supporting apollo-s">
+            <div class="support-item"><div class="dot blue"></div><span>Volume growth outpacing cost inflation by 2.3×</span></div>
+            <div class="support-item"><div class="dot blue"></div><span>3 of 4 comparable markets recovered in &lt;90d</span></div>
+            <div class="support-item"><div class="dot blue"></div><span>Supplier contract renewal reduces COGS in May</span></div>
+          </div>
+          <div class="debate-confidence">
+            <span>Confidence · 74%</span>
+            <div class="confidence-bar"><div class="confidence-fill blue" id="cf-apollo"></div></div>
+          </div>
+          <!-- Mini chart: margin recovering -->
+          <div class="debate-chart">
+            <div class="debate-chart-label">Margin trajectory — Apollo view</div>
+            <svg viewBox="0 0 620 70" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="agfill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#5a48e8" stop-opacity="0.25"/>
+                  <stop offset="100%" stop-color="#5a48e8" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <!-- Gridlines -->
+              <line x1="0" y1="35" x2="620" y2="35" stroke="#1e1e2e" stroke-width="1"/>
+              <line x1="0" y1="17" x2="620" y2="17" stroke="#1e1e2e" stroke-width="1"/>
+              <line x1="0" y1="53" x2="620" y2="53" stroke="#1e1e2e" stroke-width="1"/>
+              <!-- Area fill -->
+              <polygon points="0,42 90,50 180,58 270,54 360,42 450,28 540,18 620,14 620,70 0,70" fill="url(#agfill)"/>
+              <!-- Line -->
+              <polyline points="0,42 90,50 180,58 270,54 360,42 450,28 540,18 620,14" fill="none" stroke="#5a48e8" stroke-width="1.5"/>
+              <!-- Current point -->
+              <circle cx="270" cy="54" r="3" fill="#5a48e8"/>
+              <text x="272" y="48" font-family="ui-monospace, SF Mono, Menlo, Courier New, monospace" font-size="8" fill="#5a48e8">now</text>
+              <!-- Projected dashed -->
+              <polyline points="270,54 360,42 450,28 540,18 620,14" fill="none" stroke="#5a48e8" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+              <!-- Axis labels -->
+              <text x="0" y="68" font-family="ui-monospace, SF Mono, Menlo, Courier New, monospace" font-size="8" fill="#606080">Q3</text>
+              <text x="140" y="68" font-family="ui-monospace, SF Mono, Menlo, Courier New, monospace" font-size="8" fill="#606080">Q4</text>
+              <text x="270" y="68" font-family="ui-monospace, SF Mono, Menlo, Courier New, monospace" font-size="8" fill="#606080">Q1</text>
+              <text x="420" y="68" font-family="ui-monospace, SF Mono, Menlo, Courier New, monospace" font-size="8" fill="#606080">Q2 →</text>
+            </svg>
+          </div>
+        </div>
+
+        <div class="debate-divider"></div>
+
+        <!-- Cass -->
+        <div class="debate-panel cass">
+          <div class="agent-label cass-label">Cass — Cautious</div>
+          <div class="debate-metric">Tables Profitability · Southeast · Q1</div>
+          <div class="debate-text-block cass-text">Volume growth is masking a structural problem. The 3.2pp compression reflects pricing power erosion, not a logistics spike. ASP is down 4.1% — the steepest decline in 6 quarters. If we hold current pricing, enterprise churn risk escalates. <strong style="color:#c0c0e0">Volume cannot compensate if ASP keeps falling.</strong></div>
+          <div class="debate-supporting cass-s">
+            <div class="support-item"><div class="dot red"></div><span>ASP down 4.1% — steepest decline in 6 quarters</span></div>
+            <div class="support-item"><div class="dot red"></div><span>Enterprise NPS fell 8pts alongside margin drop</span></div>
+            <div class="support-item"><div class="dot red"></div><span>2022 recovery required pricing action, not volume</span></div>
+          </div>
+          <div class="debate-confidence">
+            <span>Confidence · 68%</span>
+            <div class="confidence-bar"><div class="confidence-fill red" id="cf-cass"></div></div>
+          </div>
+          <!-- Mini chart: ASP declining -->
+          <div class="debate-chart">
+            <div class="debate-chart-label">ASP trend — Cass view</div>
+            <svg viewBox="0 0 620 70" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="cgfill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#AB1DC4" stop-opacity="0.2"/>
+                  <stop offset="100%" stop-color="#AB1DC4" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <line x1="0" y1="35" x2="620" y2="35" stroke="#1e1e2e" stroke-width="1"/>
+              <line x1="0" y1="17" x2="620" y2="17" stroke="#1e1e2e" stroke-width="1"/>
+              <line x1="0" y1="53" x2="620" y2="53" stroke="#1e1e2e" stroke-width="1"/>
+              <!-- Area -->
+              <polygon points="0,20 90,22 180,26 270,32 360,42 450,52 540,60 620,66 620,70 0,70" fill="url(#cgfill)"/>
+              <!-- Line -->
+              <polyline points="0,20 90,22 180,26 270,32 360,42 450,52 540,60 620,66" fill="none" stroke="#AB1DC4" stroke-width="1.5"/>
+              <!-- Current point -->
+              <circle cx="270" cy="32" r="3" fill="#AB1DC4"/>
+              <text x="272" y="28" font-family="ui-monospace, SF Mono, Menlo, Courier New, monospace" font-size="8" fill="#AB1DC4">now</text>
+              <!-- Projected dashed -->
+              <polyline points="270,32 360,42 450,52 540,60 620,66" fill="none" stroke="#AB1DC4" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+              <!-- Labels -->
+              <text x="0" y="68" font-family="ui-monospace, SF Mono, Menlo, Courier New, monospace" font-size="8" fill="#606080">Q3</text>
+              <text x="140" y="68" font-family="ui-monospace, SF Mono, Menlo, Courier New, monospace" font-size="8" fill="#606080">Q4</text>
+              <text x="270" y="68" font-family="ui-monospace, SF Mono, Menlo, Courier New, monospace" font-size="8" fill="#606080">Q1</text>
+              <text x="420" y="68" font-family="ui-monospace, SF Mono, Menlo, Courier New, monospace" font-size="8" fill="#606080">Q2 →</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div><!-- /screen-content -->
+  </div><!-- /monitor-frame -->
+
+  <div class="s5-caption">Read both sides. Understand the tension. Then make the call.</div>
+</div>
+
+<!-- SCENE 6 ─ The verdict -->
+<div class="scene" id="scene6">
+  <div class="s6-header">
+    <div class="s6-line l1">You read both sides. You decide.</div>
+    <div class="s6-line l2">The reasoning is logged. The decision is yours.</div>
+  </div>
+  <div class="s6-body">
+    <div class="decision-trail">
+      <div class="trail-label">Decision Trail</div>
+      <div class="trail-entry"><span class="trail-time">09:42</span><span>Explored: Tables profitability</span></div>
+      <div class="trail-dot-line"></div>
+      <div class="trail-entry" style="opacity:0.45"><span class="trail-time">09:31</span><span>Reviewed: Churn rate anomaly</span></div>
+      <div class="trail-dot-line"></div>
+      <div class="trail-entry" style="opacity:0.3"><span class="trail-time">09:14</span><span>Opened: SE region deep-dive</span></div>
+    </div>
+    <div class="verdict-screen">
+      <div class="verdict-top">
+        <div class="verdict-panel apollo-v">
+          <div class="verdict-panel-label gn">Apollo · Bullish</div>
+          <div class="verdict-summary">Temporary compression. Volume trajectory normalises by Q2. Historical precedent supports recovery. Recommend holding current strategy and monitoring logistics contract renewal impact through May.</div>
+        </div>
+        <div class="verdict-panel">
+          <div class="verdict-panel-label rd">Cass · Cautious</div>
+          <div class="verdict-summary">Structural pricing erosion underway. Volume gains insufficient if ASP continues declining. Recommend proactive enterprise pricing review before Q2 planning cycle closes.</div>
+        </div>
+      </div>
+      <div class="verdict-bar">
+        <button class="verdict-btn apollo-btn">I side with Apollo</button>
+        <span class="verdict-or">or</span>
+        <button class="verdict-btn cass-btn">I side with Cass</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCENE 7 ─ Closing -->
+<div class="scene" id="scene7">
+  <div class="s7-line l1">You have the data.</div>
+  <div class="s7-line l2">Now you can have the debate, and make the call.</div>
+  <div class="s7-final">Debate Room. Business Intelligence, evolved.</div>
+</div>
+
+<script>
+// ─── CONFIDENCE BARS ─────────────────────────────────────────
+function animateWidth(el, targetPct, delayMs) {
+  el.style.width = '0';
+  setTimeout(() => {
+    el.style.transition = 'width 0.9s cubic-bezier(0.16,1,0.3,1)';
+    el.style.width = targetPct;
+  }, delayMs);
+}
+
+// ─── CASCADE DATA ────────────────────────────────────────────
+const cascadeData = [
+  'revenue.southeast        $4,218,442',
+  'margin.tables            18.4%',
+  'churn_rate.enterprise    2.41%',
+  'cac.digital              $214.00',
+  'ltv.smb                  $8,820',
+  'nps.q1                   +34',
+  'pipeline.total           $12.4M',
+  'win_rate.enterprise      31%',
+  'cogs.logistics           $1.1M',
+  'headcount.sales          48',
+  'deals.closed_won         127',
+  'arr.growth_qoq           +18.2%',
+  'support.tickets_open     441',
+  'conversion.trial_paid    14.7%',
+  'burn.monthly             $890K',
+  'runway.months            22',
+  'expansion.revenue        $340K',
+  'contraction.revenue      $88K',
+  'net_revenue_retention    114%',
+  'feature.adoption.new     62%',
+];
+
+function initCascade() {
+  const col = document.getElementById('cascade-col');
+  col.innerHTML = '';
+  cascadeData.forEach((txt, i) => {
+    const el = document.createElement('div');
+    el.className = 'cascade-item';
+    el.textContent = txt;
+    el.style.cssText = `animation: cascadeDown 0.5s ease ${0.1*i+0.4}s forwards;`;
+    col.appendChild(el);
+  });
+}
+
+// ─── NOISE NUMBERS ────────────────────────────────────────────
+const noiseMetrics = [
+  '$4.2M','18.4%','NPS +34','$214 CAC','127 deals',
+  '2.41%','$12.4M','31%','ARR +18%','$8,820 LTV',
+  '441 tkts','14.7%','$890K','22mo','114% NRR',
+  '62%','$340K','$88K','48 AEs','$1.1M COGS',
+];
+function initNoiseNumbers() {
+  const c = document.getElementById('noise-numbers');
+  c.innerHTML = '';
+  noiseMetrics.forEach(txt => {
+    const el = document.createElement('div');
+    el.className = 'noise-num';
+    el.textContent = txt;
+    el.style.left = (5 + Math.random()*85) + '%';
+    el.style.top  = (5 + Math.random()*85) + '%';
+    c.appendChild(el);
+  });
+}
+function animateNoise(show) {
+  document.querySelectorAll('.noise-num').forEach((el, i) => {
+    el.style.transition = 'opacity 0.4s ease';
+    el.style.transitionDelay = (i*0.04) + 's';
+    el.style.opacity = show ? (0.2+Math.random()*0.45).toFixed(2) : '0';
+  });
+}
+
+// ─── SCENE TIMELINE ──────────────────────────────────────────
+const TOTAL = 71000;
+const scenes = [
+  { id:'scene0', start:0     },
+  { id:'scene1', start:3200  },
+  { id:'scene2', start:11700 },
+  { id:'scene3', start:21700 },
+  { id:'scene4', start:30200 },
+  { id:'scene5', start:40700 },
+  { id:'scene6', start:56200 },
+  { id:'scene7', start:65200 },
+];
+
+const overlay = document.getElementById('transition-overlay');
+const bar     = document.getElementById('progress-bar');
+const t0      = performance.now();
+
+function updateProgress() {
+  const pct = Math.min(((performance.now()-t0)/TOTAL)*100, 100);
+  bar.style.width = pct+'%';
+  if (pct < 100) requestAnimationFrame(updateProgress);
+}
+
+function transitionTo(idx) {
+  const id = scenes[idx].id;
+  if (id === 'scene3') initCascade();
+  if (id === 'scene4') { initNoiseNumbers(); setTimeout(()=>animateNoise(true),200); setTimeout(()=>animateNoise(false),4800); }
+
+  overlay.classList.add('visible');
+  setTimeout(() => {
+    document.querySelectorAll('.scene.active').forEach(s => s.classList.remove('active'));
+    const el = document.getElementById(id);
+    el.classList.add('active');
+    overlay.classList.remove('visible');
+
+    // Confidence bars fire after scene becomes visible
+    if (id === 'scene5') {
+      setTimeout(() => {
+        animateWidth(document.getElementById('cf-apollo'), '74%', 0);
+        animateWidth(document.getElementById('cf-cass'),  '68%', 0);
+      }, 4900);
+    }
+  }, 300);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  updateProgress();
+  for (let i = 1; i < scenes.length; i++) {
+    (idx => setTimeout(() => transitionTo(idx), scenes[idx].start))(i);
+  }
+});
+</script>
+</body>
+</html>
