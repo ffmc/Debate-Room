@@ -8,17 +8,17 @@
 /* System fonts — no external dependency */
 
 :root {
-  --bg:           #0a0a0f;
-  --surface:      #111118;
-  --surface2:     #16161f;
-  --text-primary: #f0f0f0;
-  --text-secondary: #a0a0be;       /* was #7a7a8c — boosted */
-  --text-muted:   #606080;
-  --accent:       #311DC4;         /* indigo — replaces yellow */
-  --accent-light: #5a48e8;         /* lighter tint for glows */
+  --bg:           #f5f5fa;
+  --surface:      #ffffff;
+  --surface2:     #eeeef6;
+  --text-primary: #0d0d1a;
+  --text-secondary: #38386a;
+  --text-muted:   #707098;
+  --accent:       #311DC4;
+  --accent-light: #5a48e8;
   --accent-red:   #AB1DC4;
-  --border:       #2c2c44;         /* was #1e1e2e — more visible */
-  --border-dim:   #1e1e2e;
+  --border:       #d4d4e8;
+  --border-dim:   #e4e4f2;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -58,7 +58,7 @@ body::before {
 
 /* Transition overlay */
 #transition-overlay {
-  position: fixed; inset: 0; background: #000;
+  position: fixed; inset: 0; background: #fff;
   z-index: 5000; opacity: 0; pointer-events: none;
   transition: opacity 0.3s ease;
 }
@@ -92,7 +92,7 @@ body::before {
 /* ========================
    SCENE 0 — Category anchor
    ======================== */
-#scene0 { background: #000; }
+#scene0 { background: var(--bg); }
 #scene0 .headline {
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: 32px; font-weight: 300; color: var(--text-primary); text-align: center; letter-spacing: -0.01em;
@@ -238,7 +238,7 @@ body::before {
   border:1px solid var(--border); border-radius:6px;
   padding:28px 32px; width:340px; opacity:0;
   animation: cardReveal 0.8s cubic-bezier(0.16,1,0.3,1) 5.5s forwards;
-  box-shadow: 0 0 40px rgba(49,29,196,0.12), 0 20px 60px rgba(0,0,0,0.7);
+  box-shadow: 0 0 40px rgba(49,29,196,0.08), 0 20px 40px rgba(0,0,0,0.08);
 }
 .signal-card-label { font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.12em; margin-bottom:10px; }
 .signal-card-title { font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; font-size:19px; color:var(--text-primary); line-height:1.3; margin-bottom:12px; }
@@ -257,13 +257,13 @@ body::before {
 /* Monitor / screen frame */
 .monitor-frame {
   width: 1480px;
-  background: #1c1c2e;
+  background: #dcdcee;
   border-radius: 10px 10px 6px 6px;
   box-shadow:
-    0 0 0 1px #2a2a46,
-    0 0 0 3px #14141e,
-    0 0 60px rgba(49,29,196,0.18),
-    0 40px 100px rgba(0,0,0,0.9);
+    0 0 0 1px #c8c8e0,
+    0 0 0 3px #ebebf5,
+    0 0 40px rgba(49,29,196,0.08),
+    0 20px 60px rgba(0,0,0,0.12);
   opacity: 0;
   animation: fadeIn 0.7s ease 1.3s forwards;
   flex-shrink: 0;
@@ -271,13 +271,13 @@ body::before {
 
 /* Browser chrome bar */
 .screen-chrome {
-  background: #13131e;
+  background: #eaeaf5;
   border-radius: 10px 10px 0 0;
   padding: 10px 18px;
   display: flex;
   align-items: center;
   gap: 14px;
-  border-bottom: 1px solid #252540;
+  border-bottom: 1px solid #d0d0e8;
 }
 .chrome-dots { display:flex; gap:7px; align-items:center; flex-shrink:0; }
 .chrome-dot  { width:11px; height:11px; border-radius:50%; }
@@ -286,13 +286,13 @@ body::before {
 .chrome-dot.cg { background:#28c840; }
 .chrome-tab {
   font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:12px;
-  color:var(--text-secondary); background:#1c1c2e; border-radius:4px 4px 0 0;
-  padding:5px 16px; border:1px solid #252540; border-bottom:none; flex-shrink:0;
+  color:var(--text-secondary); background:#ddddf0; border-radius:4px 4px 0 0;
+  padding:5px 16px; border:1px solid #d0d0e8; border-bottom:none; flex-shrink:0;
 }
-.chrome-tab.active-tab { color:var(--text-primary); background:#0d0d18; }
+.chrome-tab.active-tab { color:var(--text-primary); background:#f5f5fa; }
 .chrome-address {
   flex:1; max-width:520px; margin:0 auto;
-  background:#0d0d18; border:1px solid #252540; border-radius:5px;
+  background:#f5f5fb; border:1px solid #d0d0e8; border-radius:5px;
   height:26px; display:flex; align-items:center; gap:6px; padding:0 10px;
 }
 .chrome-address .lock { font-size:11px; color:var(--text-muted); }
@@ -334,7 +334,7 @@ body::before {
 
 .debate-metric { font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:12px; color:var(--text-muted); margin-bottom:12px; letter-spacing:0.08em; text-transform:uppercase; opacity:0; animation:fadeIn 0.5s ease 2.6s forwards; }
 
-.debate-text-block { font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:14px; line-height:1.75; color:rgba(200,200,220,0.88); opacity:0; flex-shrink:0; }
+.debate-text-block { font-family:ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace; font-size:14px; line-height:1.75; color:#1a1830; opacity:0; flex-shrink:0; }
 .debate-text-block.apollo-text { animation: fadeIn 0.6s ease 3.2s forwards; }
 .debate-text-block.cass-text   { animation: fadeIn 0.6s ease 3.2s forwards; }
 
@@ -396,7 +396,7 @@ body::before {
 
 .verdict-bar {
   display:flex; align-items:center; justify-content:center; gap:20px;
-  padding:22px 36px; border-top:1px solid var(--border); background:rgba(0,0,0,0.25);
+  padding:22px 36px; border-top:1px solid var(--border); background:rgba(49,29,196,0.04);
   opacity:0; animation:barReveal 0.6s ease 2.2s forwards;
 }
 .verdict-btn {
@@ -423,7 +423,7 @@ body::before {
 /* ========================
    SCENE 7 — Closing
    ======================== */
-#scene7 { background:#000; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:32px; padding:0 280px; }
+#scene7 { background:var(--bg); flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:32px; padding:0 280px; }
 #scene7 .s7-line { font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; color:var(--text-primary); line-height:1.2; opacity:0; }
 #scene7 .s7-line.l1 { font-size:40px; font-weight:600; letter-spacing:-0.02em; animation:fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 0.5s forwards; }
 #scene7 .s7-line.l2 { font-size:28px; font-weight:300; letter-spacing:-0.01em; color:var(--text-secondary); animation:fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 1.3s forwards; }
@@ -457,12 +457,12 @@ body::before {
       <svg viewBox="0 0 460 130" preserveAspectRatio="none">
         <defs>
           <linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#2c2c44" stop-opacity="0.6"/>
-            <stop offset="100%" stop-color="#2c2c44" stop-opacity="0"/>
+            <stop offset="0%" stop-color="#5a48e8" stop-opacity="0.15"/>
+            <stop offset="100%" stop-color="#5a48e8" stop-opacity="0"/>
           </linearGradient>
         </defs>
         <polygon points="0,100 57,75 115,83 172,50 230,58 287,28 345,42 402,18 460,32 460,130 0,130" fill="url(#lg1)"/>
-        <polyline points="0,100 57,75 115,83 172,50 230,58 287,28 345,42 402,18 460,32" fill="none" stroke="#3c3c60" stroke-width="1.5"/>
+        <polyline points="0,100 57,75 115,83 172,50 230,58 287,28 345,42 402,18 460,32" fill="none" stroke="#8878d8" stroke-width="1.5"/>
       </svg>
     </div>
   </div>
@@ -550,7 +550,7 @@ body::before {
         <div class="debate-panel apollo">
           <div class="agent-label apollo-label">Apollo — Bullish</div>
           <div class="debate-metric">Tables Profitability · Southeast · Q1</div>
-          <div class="debate-text-block apollo-text">The margin compression is temporary. Volume growth of +18% QoQ is absorbing fixed costs at an accelerating rate. By Q2, logistics-to-revenue normalises below baseline. Historical precedent from 2022 supports recovery within 2 quarters at this volume threshold. <strong style="color:#c0c0e0">Hold strategy and monitor May renewal.</strong></div>
+          <div class="debate-text-block apollo-text">The margin compression is temporary. Volume growth of +18% QoQ is absorbing fixed costs at an accelerating rate. By Q2, logistics-to-revenue normalises below baseline. Historical precedent from 2022 supports recovery within 2 quarters at this volume threshold. <strong style="color:#1a1830">Hold strategy and monitor May renewal.</strong></div>
           <div class="debate-supporting apollo-s">
             <div class="support-item"><div class="dot blue"></div><span>Volume growth outpacing cost inflation by 2.3×</span></div>
             <div class="support-item"><div class="dot blue"></div><span>3 of 4 comparable markets recovered in &lt;90d</span></div>
@@ -570,10 +570,6 @@ body::before {
                   <stop offset="100%" stop-color="#5a48e8" stop-opacity="0"/>
                 </linearGradient>
               </defs>
-              <!-- Gridlines -->
-              <line x1="0" y1="35" x2="620" y2="35" stroke="#1e1e2e" stroke-width="1"/>
-              <line x1="0" y1="17" x2="620" y2="17" stroke="#1e1e2e" stroke-width="1"/>
-              <line x1="0" y1="53" x2="620" y2="53" stroke="#1e1e2e" stroke-width="1"/>
               <!-- Area fill -->
               <polygon points="0,42 90,50 180,58 270,54 360,42 450,28 540,18 620,14 620,70 0,70" fill="url(#agfill)"/>
               <!-- Line -->
@@ -598,7 +594,7 @@ body::before {
         <div class="debate-panel cass">
           <div class="agent-label cass-label">Cass — Cautious</div>
           <div class="debate-metric">Tables Profitability · Southeast · Q1</div>
-          <div class="debate-text-block cass-text">Volume growth is masking a structural problem. The 3.2pp compression reflects pricing power erosion, not a logistics spike. ASP is down 4.1% — the steepest decline in 6 quarters. If we hold current pricing, enterprise churn risk escalates. <strong style="color:#c0c0e0">Volume cannot compensate if ASP keeps falling.</strong></div>
+          <div class="debate-text-block cass-text">Volume growth is masking a structural problem. The 3.2pp compression reflects pricing power erosion, not a logistics spike. ASP is down 4.1% — the steepest decline in 6 quarters. If we hold current pricing, enterprise churn risk escalates. <strong style="color:#1a1830">Volume cannot compensate if ASP keeps falling.</strong></div>
           <div class="debate-supporting cass-s">
             <div class="support-item"><div class="dot red"></div><span>ASP down 4.1% — steepest decline in 6 quarters</span></div>
             <div class="support-item"><div class="dot red"></div><span>Enterprise NPS fell 8pts alongside margin drop</span></div>
@@ -618,9 +614,6 @@ body::before {
                   <stop offset="100%" stop-color="#AB1DC4" stop-opacity="0"/>
                 </linearGradient>
               </defs>
-              <line x1="0" y1="35" x2="620" y2="35" stroke="#1e1e2e" stroke-width="1"/>
-              <line x1="0" y1="17" x2="620" y2="17" stroke="#1e1e2e" stroke-width="1"/>
-              <line x1="0" y1="53" x2="620" y2="53" stroke="#1e1e2e" stroke-width="1"/>
               <!-- Area -->
               <polygon points="0,20 90,22 180,26 270,32 360,42 450,52 540,60 620,66 620,70 0,70" fill="url(#cgfill)"/>
               <!-- Line -->
